@@ -16,9 +16,9 @@ function Canvas({draw, height, width, mscbFunc }) {
         height={height}
         width={width}
         ref={canvas}
-        onMouseDown={(e1) => mscbFunc("DOWN", e1.clientX ,e1.clientY)}
-        onMouseUp={(e1) => mscbFunc("UP", e1.clientX ,e1.clientY)}
-        onMouseMove={(e1) => mscbFunc("MOVE", e1.clientX ,e1.clientY)}>
+        onMouseDown={(e1) => {mscbFunc("DOWN", e1.clientX ,e1.clientY, e1)}}
+        onMouseUp={(e1) => {mscbFunc("UP", e1.clientX ,e1.clientY, e1)}}
+        onMouseMove={(e1) => {mscbFunc("MOVE", e1.clientX ,e1.clientY, e1)}}>
 
         </canvas>
     )
