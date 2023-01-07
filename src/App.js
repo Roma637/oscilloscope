@@ -7,59 +7,41 @@ import waveforms from './waveforms1.json';
 
 var prevdraw = []
 var coord = undefined;
+
 function App() {
 
-  // let disp = fetch("./waveforms1.json")
-  // .then(response => {return response.json()})
-  // .then(data => console.log(data))
-  var first_set = waveforms[0]
-  //time is in microseconds
-  var name = first_set[0]
-  // var no_of_segments = first_set[1]
-  var time_segments = first_set.slice(2,-1)
-  var total_time = first_set.slice(2,-1).reduce((a, b) => {return Number(a)+Number(b)})
-
-  // console.log(name)
-  // console.log(no_of_segments)
-  // console.log(total_time)
-
-  var canvas_height = 700
-  var canvas_width = 1000
+  var canvas_height = 550
+  var canvas_width = 900
 
   let [state, setState] = useState({
     "X_MIDPOINT" : 10,
     "Y_MIDPOINT": 10, 
     "Y_BASELINE" : 20, 
-    "GRAPH_HEIGHT" : 100, 
+    "GRAPH_HEIGHT" : 80, 
     "TIME_SCALE" : 1, 
     "TIME_OFFSET" : 50,
     "Y_SCALE" : 1, 
     "LINE_WIDTH" : 1,
-    "CHANNS" : { "go" : {"YOFF" : 1}, "power" : {"YOFF" : 1}},
+    // "COMMANDS" : { "go" : {"Y_OFF" : 1}, "power" : {"Y_OFF" : 1}},
+    "COMMANDS" : { },
+    // "COMMANDS" : [{"name":"go", }]
     "MOUSE" : {"UP" : [0,0,0], "MOVE" : [0,0,0], "DOWN" : [0,0,0]}
   })
 
-  let x_midpoint = (mp, fg1) => { if( mp === undefined) { return(state["X_MIDPOINT"]);} else { console.log("Mod x_midpoint " + mp); setState({...state, "X_MIDPOINT" : mp})} }
-  let y_midpoint = (mp, fg1) => { if( mp === undefined) { return(state["Y_MIDPOINT"]);} else { console.log("Mod y_midpoint " + mp); setState({...state, "Y_MIDPOINT" : mp})} }
-  let y_baseline = (mp) => { if( mp === undefined) { return(state["Y_BASELINE"]);} else { console.log("Mod y_baseline " + mp); setState({...state, "Y_BASELINE" : mp})} }
+  // console.log(state)
+
+  let x_midpoint = (mp) => { if( mp === undefined) { return(state["X_MIDPOINT"]);} else { console.log("Mod x_midpoint " + mp); setState({...state, "X_MIDPOINT" : mp})} }
+  let y_midpoint = (mp) => { if( mp === undefined) { return(state["Y_MIDPOINT"]);} else { console.log("Mod y_midpoint " + mp); setState({...state, "Y_MIDPOINT" : mp})} }
+  let y_baseline = (mp, fg1) => {if( fg1 !== undefined) {return({"Y_BASELINE" : mp});}; if( mp === undefined) { return(state["Y_BASELINE"]);} else { console.log("Mod y_baseline " + mp); setState({...state, "Y_BASELINE" : mp})} }
   let graph_height = (mp) => { if( mp === undefined) { return(state["GRAPH_HEIGHT"]);} else { console.log("Mod graph_height"); setState({...state, "GRAPH_HEIGHT" : mp})} }
   let time_scale = (mp, fg1) => { if( fg1 !== undefined) {return({"TIME_SCALE" : mp});}; if( mp === undefined) { return(state["TIME_SCALE"]);} else { setState({...state, "TIME_SCALE" : mp})} }
   let time_offset = (mp, fg1) => { if( fg1 !== undefined) {return({"TIME_OFFSET" : mp});} if( mp === undefined) { return(state["TIME_OFFSET"]);} else {console.log("setState TimeOffset=" + mp); setState({...state, "TIME_OFFSET" : mp})} }
   let y_scale = (mp) => { if( mp === undefined) { return(state["Y_SCALE"]);} else {setState({...state, "Y_SCALE" : mp})} }
-  // console.log("yscale is " + y_scale())
 
   let line_width = (mp) => { if( mp === undefined) { return(state["LINE_WIDTH"]);} else { console.log("Mod line_width " + mp); setState({...state, "LINE_WIDTH" : mp})} }
 
-  // midpoint(midpoint() + 5)
-  // var [midpoint, setMidpoint] = useState(canvas_height/2)
-
-  // var [baseline, setBaseline] = useState(200)
   function baseline_y (val1) { return(val1 - y_baseline());}
-
-  // var [graph_height, setGraphHeight] = useState(200)
-
-  // //in pixels per ms
-  let x_scale = () => canvas_width/total_time
+  
   if (coord === undefined ) {
     coord = waveforms.map((time, index) => {
       //time stands for one complete array
@@ -77,11 +59,36 @@ function App() {
                     return(rv1)
                 });
         return(hash1);
-    })  
+    })
   }
-  function draw(context, canvas) {
-    //low is y=500
-    //high is y=100
+  console.log("======= COORD ========")
+  console.log(coord)
+
+  //calculate the height of each graph
+  var temp = canvas_height/coord.length; 
+  state["GRAPH_HEIGHT"] = temp
+  console.log("the height of each graph is " + graph_height())
+
+  //the highs and lows for each graph
+  var graph_high = 0.1 * graph_height()
+  var graph_low = 0.9 * graph_height()
+
+  //do the math and assign each graph its own y offset
+
+  waveforms.map( (v1) => v1[0].trim()).map((pv, index) => { 
+    var to_set = index * graph_height()
+    state["COMMANDS"][pv] = {"Y_OFF" : to_set}
+    // console.log("INDEX IS " + index)
+  })
+
+  // console.log("==== COMMANDS =====")
+  // console.log(state["COMMANDS"])
+
+  // console.log("==== state =====")
+  // console.log(state)
+
+  function draw(coords, context, canvas) {
+
 
     context.lineWidth = line_width()
 
@@ -109,15 +116,11 @@ function App() {
     // console.log(coord)
     // console.log("-------")
     // console.log(coord[0]["go        "].slice(-1).slice(-1)[0].slice(-1)[0][0])
-    if(coord === undefined) {return(0);}
-    let coord2 = coord.reduce((prev, curr) => {return({...prev, ...curr})})
+    if(coords === undefined) {return(0);}
+    let coords2 = coords.reduce((prev, curr) => {return({...prev, ...curr})})
     // console.log(coord2)
 
-    let target_command = coord2["go        "]
-    // console.log(target_command)
-
-    // let x_span = target_command.slice(-1)[0].slice(-1)[0][0]
-    // console.log(x_span)
+    let target_command = coords2["go        "]
 
     function get_x_mapfunc(cartesian_coords){
       let x_span = cartesian_coords.slice(-1)[0].slice(-1)[0][0]
@@ -125,11 +128,14 @@ function App() {
     }
 
     function get_y_mapfunc(){
-      return((y) => (2-y) * canvas_height * (1/3))
+      // console.log("using graph height")
+      return((y) => (2-y) * graph_height())
+      // return((y) => (2-y) * canvas_height * (1/3))
     }
 
     let x_map = get_x_mapfunc(target_command);
     let y_map = get_y_mapfunc(target_command); 
+
     prevdraw = []
     var outRng = 0;
     var lastOutRng = [];
@@ -173,45 +179,37 @@ function App() {
             context.stroke()            
           }
           outRng = 0
-          console.log("X out of range " + c1[0] + "-----" + c2[0])
+          // console.log("X out of range " + c1[0] + "-----" + c2[0])
         }
     })
-
-    // time_segments.map((time, index) =>
-    //   {
-    //   //first the horizontal line
-    //   current_x = current_x + (x_scale() * time ) + time_scale()
-    //   draw_y = current_y - (y_0axis - current_y) * y_scale()
-    //   context.lineTo(current_x, baseline_y(draw_y))
-    //   context.stroke()
-    //   //then whether you draw up or down
-    //   if (index % 2===0){ //this means low, and need to go up
-    //     current_y = current_y - graph_height() 
-    //   }
-    //   else { //this means high
-    //     current_y = current_y + graph_height()
-    //   }
-    //   draw_y = current_y - (y_0axis - current_y) * y_scale()
-
-    //   context.lineTo(current_x, baseline_y(draw_y ))
-    //   context.stroke()
-    //   })
   }
 
+  function draw2(contex, canvas) {}
+
+  function draw3(context) {console.log("second canvas talking here!")}
+
   let mscbFunc = (m,x,y, e1) => { 
+    var to_set = 0; var to_offset = 0; var to_set_y = 0;
     if (e1.getModifierState("Shift")) {console.log("------- Shift pressed") }
-    if(m === "DOWN") { console.log("mousedown"); setState({...state, "MOUSE" : {...state["MOUSE"], "LAST_TIMEOFFSET" : time_offset(),"LAST_TIMESCALE" : time_scale(), "DOWN" : [x,y,1], "MOVE" : [0,0,0], "UP" : [0,0,0]}}) } 
+    if(m === "DOWN") { console.log("mousedown"); setState({...state, "MOUSE" : {...state["MOUSE"], "LAST_TIMEOFFSET" : time_offset(),"LAST_TIMESCALE" : time_scale(), "DOWN" : [x,y,1], "MOVE" : [0,0,0], "UP" : [0,0,0], "LAST_YOFFSET" : y_baseline()}}) } 
     if(m === "UP") {console.log("mouseup");  setState({...state, "MOUSE" : {...state["MOUSE"], "DOWN" : [0,0,0], "MOVE" : [0,0,0], "UP" : [x,y,1]}}) } 
     if(m === "MOVE" && state["MOUSE"]["DOWN"][2] === 1) {
       console.log("mousemove") 
       var dn1 = state["MOUSE"]["DOWN"] 
-      var mv1 = state["MOUSE"]["MOVE"]
       var mgHash = {}
+      let f_scale = (cx, dnx) => {return((cx - dnx)/100);}
+      let f_offset = (cx, dnx) => {return((cx - dnx)/2);}
       if(dn1[2] === 1) { 
         if (e1.getModifierState("Shift")){
-          var to_set = (x - dn1[0])/100;  mgHash = time_scale(to_set + state["MOUSE"]["LAST_TIMESCALE"],1 );
+          console.log("last X = " + dn1[0] + "    curr X=" + x)
+          to_set = f_scale (x , dn1[0]); 
+          var esx1 = to_set + state["MOUSE"]["LAST_TIMESCALE"]
+          mgHash = time_scale(esx1,1 );
+          to_offset = (2 * state["MOUSE"]["LAST_TIMEOFFSET"])  -  (esx1 * state["MOUSE"]["LAST_TIMEOFFSET"])
+          mgHash = {...mgHash, ...time_offset(to_offset, 1)}
         } else {
-          var to_set = (x - dn1[0])/2;  mgHash = time_offset(to_set + state["MOUSE"]["LAST_TIMEOFFSET"],1 );
+          to_set = f_offset(x ,dn1[0]); mgHash = time_offset(to_set + state["MOUSE"]["LAST_TIMEOFFSET"],1 );
+          to_set_y = -(y - dn1[1]) ; mgHash = {...mgHash, ...y_baseline(to_set_y + state["MOUSE"]["LAST_YOFFSET"],1)}
         }
       }
       console.log("actual value is time offset is now " + state["TIME_OFFSET"])
@@ -220,16 +218,18 @@ function App() {
       setState({...state, ...mgHash, "MOUSE" : {...state["MOUSE"], "DOWN" : state["MOUSE"]["DOWN"], "MOVE" : [x,y,1], "UP" : state["MOUSE"]["UP"]}}) 
       } 
   } 
+
   return (
     <div className="App">
 
-      {/* {waveforms.map((comm) => 
-        <p> {comm} </p>
-      )} */}
-
-      <Canvas draw={draw} height={canvas_height+"px"} width={canvas_width+"px"} mscbFunc={mscbFunc}></Canvas>
-
-      {/* <button> Draw </button> */}
+      <table><tr>
+      <td>
+      <Canvas id="a" draw={draw} height={canvas_height+"px"} width={canvas_width+"px"} mscbFunc={mscbFunc}></Canvas>
+      </td>
+      <td>
+      <Canvas id="b" draw={draw3} height={canvas_height+"px"} width={"200px"} mscbFunc={mscbFunc}></Canvas>
+      </td>
+      </tr></table>
 
       <div id="control_buttons" >
       <button onClick={ (e1) => time_scale(Math.min(time_scale() + 0.2, 10))}> Strech X </button>
@@ -253,5 +253,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
