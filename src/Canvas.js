@@ -3,10 +3,10 @@ import React from 'react';
 function Canvas({draw, height, width, mscbFunc }) {
 
     const canvas = React.useRef()
-    
 
     React.useEffect(() => {
         const context = canvas.current.getContext('2d'); //so that we do 2d and not 3d drawings
+        // const context = canvas.getContext('2d')
         draw(context,canvas)
     })
 
