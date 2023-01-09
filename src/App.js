@@ -24,7 +24,7 @@ function App() {
     "GRAPH_HEIGHT" : 80, 
     "GRAPH_WIDTH":10,
     "TIME_SCALE" : 1, 
-    "TIME_OFFSET" : 50,
+    "TIME_OFFSET" : 0,
     "Y_SCALE" : 1, 
     "LINE_WIDTH" : 1,
     // "COMMANDS" : { "go" : {"Y_OFF" : 1}, "power" : {"Y_OFF" : 1}},
@@ -35,11 +35,11 @@ function App() {
 
   // console.log(state)
 
-  let x_midpoint = (mp) => { if( mp === undefined) { return(state["X_MIDPOINT"]);} else { console.log("Mod x_midpoint " + mp); setState({...state, "X_MIDPOINT" : mp})} }
-  let y_midpoint = (mp) => { if( mp === undefined) { return(state["Y_MIDPOINT"]);} else { console.log("Mod y_midpoint " + mp); setState({...state, "Y_MIDPOINT" : mp})} }
+  // let x_midpoint = (mp, fg1) => { if( fg1 !== undefined) {return({"X_MIDPOINT" : mp});}  if( mp === undefined) { return(state["X_MIDPOINT"]);} else { console.log("Mod x_midpoint " + mp); setState({...state, "X_MIDPOINT" : mp})} }
+  // let y_midpoint = (mp, fg1) => { if( fg1 !== undefined) {return({"Y_MIDPOINT" : mp});}; if( mp === undefined) { return(state["Y_MIDPOINT"]);} else { console.log("Mod y_midpoint " + mp); setState({...state, "Y_MIDPOINT" : mp})} }
   let y_baseline = (mp, fg1) => {if( fg1 !== undefined) {return({"Y_BASELINE" : mp});}; if( mp === undefined) { return(state["Y_BASELINE"]);} else { console.log("Mod y_baseline " + mp); setState({...state, "Y_BASELINE" : mp})} }
-  let graph_height = (mp) => { if( mp === undefined) { return(state["GRAPH_HEIGHT"]);} else { console.log("Mod graph_height"); setState({...state, "GRAPH_HEIGHT" : mp})} }
-  let graph_width = (mp) => { if( mp === undefined) { return(state["GRAPH_WIDTH"]);} else { console.log("Mod graph_width"); setState({...state, "GRAPH_WIDTH" : mp})} }
+  let graph_height = (mp, fg1) => {if( fg1 !== undefined) {return({"GRAPH_HEIGHT" : mp});}  if( mp === undefined) { return(state["GRAPH_HEIGHT"]);} else { console.log("Mod graph_height"); setState({...state, "GRAPH_HEIGHT" : mp})} }
+  let graph_width = (mp, fg1) => { if( fg1 !== undefined) {return({"GRAPH_WIDTH" : mp});}; if( mp === undefined) { return(state["GRAPH_WIDTH"]);} else { console.log("Mod graph_width"); setState({...state, "GRAPH_WIDTH" : mp})} }
   let time_scale = (mp, fg1) => { if( fg1 !== undefined) {return({"TIME_SCALE" : mp});}; if( mp === undefined) { return(state["TIME_SCALE"]);} else { setState({...state, "TIME_SCALE" : mp})} }
   let time_offset = (mp, fg1) => { if( fg1 !== undefined) {return({"TIME_OFFSET" : mp});} if( mp === undefined) { return(state["TIME_OFFSET"]);} else {console.log("setState TimeOffset=" + mp); setState({...state, "TIME_OFFSET" : mp})} }
   let y_scale = (mp, fg1) => { if( fg1 !== undefined) {return({"Y_SCALE" : mp});} if( mp === undefined) { return(state["Y_SCALE"]);} else {setState({...state, "Y_SCALE" : mp})} }
@@ -124,8 +124,7 @@ function App() {
     // let current_y = y_0axis 
 
 
-    context.globalCompositeOperation = "source-over"
-
+  
     // if(coords === undefined) {return(0);}
     // let coords2 = coords.reduce((prev, curr) => {return({...prev, ...curr})})
     // console.log(coord2)
@@ -176,6 +175,7 @@ function App() {
         // var c1 = [x_map(a1[0]) *  time_scale() + time_offset() + current_x_offset, baseline_y(y_map(a1[1]) / y_scale()) + current_y_offset]
         // var c2 = [x_map(a2[0]) *  time_scale() + time_offset() + current_x_offset, baseline_y(y_map(a2[1]) / y_scale()) + current_y_offset]
         // var c3 = [x_map(a3[0]) *  time_scale() + time_offset() + current_x_offset, baseline_y(y_map(a3[1]) / y_scale()) + current_y_offset]
+        
         var c1 = [x_map(a1[0]) *  time_scale() + time_offset(), baseline_y(y_map(a1[1]) / y_scale()) + y_bounds[arrindx]]
         var c2 = [x_map(a2[0]) *  time_scale() + time_offset(), baseline_y(y_map(a2[1]) / y_scale()) + y_bounds[arrindx]]
         var c3 = [x_map(a3[0]) *  time_scale() + time_offset(), baseline_y(y_map(a3[1]) / y_scale()) + y_bounds[arrindx]]
@@ -189,10 +189,13 @@ function App() {
         // console.log(c3)
 
         let check_x = (c1) => c1[0] > 0 && c1[0] < canvas_width
-        let check_x_low  = (c1) => c1[0] > 0 
-        let check_x_high  = (c1) =>  c1[0] < canvas_width
+        let check_x_low  = (c1) => c1[0] > 0 //returns true if within bounds 
+        let check_x_high  = (c1) =>  c1[0] < canvas_width // returns true if within bounds
         if(! check_x_low(c3)) {lowfail = [c1,c2,c3]; }
-        if(highfail === undefined && ! check_x_high(c1)) {highfail = [c1,c2,c3]; }
+
+        // if(highfail === undefined && ! check_x_high(c1)) {highfail = [c1,c2,c3]; }
+        if(highfail === undefined && ! check_x_high(c2)) {highfail = [c1,c2,c3]; }
+
         if(check_x(c1) && check_x(c2)) { 
           drawcount = drawcount + 1
           prevdraw = [...prevdraw, [c1,c2,c3]]
@@ -223,9 +226,16 @@ function App() {
             if(highfail !== undefined && lowfail !== undefined) {
               var [c1a,c2a,c3a] = lowfail
               var [c1b,c2b,c3b] = highfail
-              context.moveTo(...c1a)
-              context.lineTo(...c3b)
+              
+              // context.moveTo(...c1a)
+              context.moveTo(...c1b)
+
+              // context.lineTo(c3b[0], c1a[1])
+              context.lineTo(...c2b)
+
+              
               context.stroke()  
+              
             } else {
               console.log("highfail or lowail is undefined - not a big issue though")
               console.log(lowfail)
@@ -240,13 +250,20 @@ function App() {
   function draw2(context) {
 
     context.beginPath()
+
     context.globalCompositeOperation = "destination-out"
 
     context.clearRect(0,0, canvas_width, canvas_height)
 
     //for item in coords, draw() while passing coords to it
+    var colorArr = ["#FF0000", "#00FF00","#0000FF"]
+    coords.map((coord, indx) => {
+      context.beginPath()
+      context.globalCompositeOperation = "source-over"
 
-    coords.map((coord, indx) => draw(coord, context, indx))
+      context.strokeStyle = colorArr[indx % colorArr.length]
+      return(draw(coord, context, indx));
+      })
 
   }
 
@@ -316,8 +333,7 @@ function App() {
         <button onClick={ (e1) => y_baseline(y_baseline() - 10)}> Move Down </button>
         <br/>
         {/* these two do not */}
-        <br/>
-        <br/>    
+
       </div>
 
     </div>
