@@ -2,25 +2,27 @@ import React from 'react';
 import { useState } from 'react';
 import './App.css';
 import Canvas from './Canvas'
-import waveforms from './waveforms1.json';
+// import waveforms from './waveforms1.json';
+import waveforms from './led_remote.json';
 
 
 var prevdraw = []
 var coords = undefined;
+var legends = [];
 var  y_bounds = undefined
 var  x_bounds = undefined
-var bound_rect_leg = undefined
-var bound_rect_wav = undefined
+var bound_rect_leg = undefined //stands for legend
+var bound_rect_wav = undefined //stands for the wave
 
 function App() {
 
   var canvas_height = 500
-  var canvas_width = 900
+  var canvas_width = 1200
 
   let [state, setState] = useState({
     "X_MIDPOINT" : 10,
     "Y_MIDPOINT": 10, 
-    "Y_BASELINE" : 20, 
+    "Y_BASELINE" : 0, 
     "GRAPH_HEIGHT" : 80, 
     "GRAPH_WIDTH":10,
     "TIME_SCALE" : 1, 
@@ -55,6 +57,7 @@ function App() {
       var arr1 = time.slice(2,-1) //arr1 holds all the timings in microseconds, with the first being LOW
       var acc1 = Number(arr1[0]) //the first timing
       var num1 = 0; var num2 = 1;
+      legends = [...legends, [time[0].trim()]]
       hash1[time[0]] = arr1.slice(1).map(
         (v1, indx1) => 
                 {
@@ -77,9 +80,13 @@ function App() {
     bound_rect_leg = coords.map((v1, ii) => [[x_bounds[ii], y_bounds[ii]],[x_bounds[ii + 1], y_bounds[ii + 1]]])
     bound_rect_wav = coords.map((v1, ii) => [[x_bounds[ii], 0],[x_bounds[ii + 1], canvas_width]])
   }
- 
   
-  
+  if(legends[0].length < 2) {
+    legends.map((vala, indx) => {
+      legends[indx] = [...legends[indx], x_bounds[indx], y_bounds[indx]]
+     })
+  }
+  console.log(legends)
   console.log("BOUNDS")
   console.log(y_bounds)
   console.log(x_bounds)
@@ -97,8 +104,8 @@ function App() {
   // console.log("the span of each graph is" + graph_width())
 
   //the highs and lows for each graph
-  var graph_high = 0.1 * graph_height()
-  var graph_low = 0.9 * graph_height()
+  // var graph_high = 0.1 * graph_height()
+  // var graph_low = 0.9 * graph_height()
 
   //do the math and assign each graph its own y offset and x-offset
 
@@ -131,8 +138,8 @@ function App() {
 
     let command_name = Object.entries(coord)[0][0].trim()
     let x_items = Object.entries(coord)[0][1]
-    console.log('=======X ITEMS=========')
-    console.log(x_items)
+    // console.log('=======X ITEMS=========')
+    // console.log(x_items)
 
     // console.log("AAAAAAAAAAAAAAAAAAAAAAAAAA")
     // console.log(command_name)
@@ -153,7 +160,7 @@ function App() {
     function get_y_mapfunc(){
       // console.log("using graph height")
       console.log("y func mapping")
-      return((y) => (1-y) * graph_height())
+      return((y) => (1-y) * 0.8 * graph_height())
       // return((y) => (2-y) * canvas_height * (1/3))
     }
 
@@ -224,6 +231,7 @@ function App() {
           outRng = 0
           if(drawcount === 0) {
             if(highfail !== undefined && lowfail !== undefined) {
+
               var [c1a,c2a,c3a] = lowfail
               var [c1b,c2b,c3b] = highfail
               
@@ -241,10 +249,15 @@ function App() {
               console.log(lowfail)
               console.log(highfail)
             }
-        }
+          }
+         
           // console.log("X out of range " + c1[0] + "-----" + c2[0])
         }
     })
+    var vala = legends[arrindx]
+    // context.fillText(vala[0], vala[1], (baseline_y(vala[2]) / y_scale()) + graph_height()/2 )
+    context.fillText(vala[0], x_bounds[arrindx],  y_bounds[arrindx] - y_baseline()  + graph_height()/2 )
+
   }
 
   function draw2(context) {
@@ -252,8 +265,16 @@ function App() {
     context.beginPath()
 
     context.globalCompositeOperation = "destination-out"
-
     context.clearRect(0,0, canvas_width, canvas_height)
+
+    context.beginPath()
+    context.globalCompositeOperation = "source-over"
+
+    //line
+    context.strokeStyle = "#636363"
+    context.moveTo(0, 0.5 * canvas_height)
+    context.lineTo(canvas_width, 0.5 * canvas_height)
+    context.stroke()
 
     //for item in coords, draw() while passing coords to it
     var colorArr = ["#FF0000", "#00FF00","#0000FF"]
@@ -262,14 +283,13 @@ function App() {
       context.globalCompositeOperation = "source-over"
 
       context.strokeStyle = colorArr[indx % colorArr.length]
+      context.fillStyle = "#c3c3c3" ; //colorArr[indx % colorArr.length]
+      context.font = "20px Comic Sans MS";
       return(draw(coord, context, indx));
       })
 
   }
 
-  function draw3(context) {
-    // console.log("second canvas talking here!")
-  }
   var y_to_set=0;
   let mscbFunc = (m,x,y, e1) => { 
     var to_set = 0; var to_offset = 0; var to_set_y = 0;
@@ -309,14 +329,8 @@ function App() {
   return (
     <div className="App">
 
-      <table><tr>
-      <th>
       <Canvas id="a" draw={draw2} height={canvas_height+"px"} width={canvas_width+"px"} mscbFunc={mscbFunc}></Canvas>
-      </th>
-      <th>
-      <Canvas id="b" draw={draw3} height={canvas_height+"px"} width={"200px"} mscbFunc={mscbFunc}></Canvas>
-      </th>
-      </tr></table>
+
 
       <div id="control_buttons" >
       <button onClick={ (e1) => time_scale(Math.min(time_scale() + 0.2, 10))}> Strech X </button>
